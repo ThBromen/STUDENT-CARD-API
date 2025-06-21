@@ -14,7 +14,7 @@ import swaggerJSDoc from "swagger-jsdoc";
 import globalErrorHandle from "./Controllers/Error/errorController";
 
 
-const port = 6000;
+const port = 3000;
 
 const options = {
   swaggerDefinition: {
