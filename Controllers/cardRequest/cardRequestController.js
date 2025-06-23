@@ -343,10 +343,15 @@ export const verifyCard = catchAsync(async (req, res) => {
 });
 
 // verfiy a card by hash
+
 export const verifyCardByHash = catchAsync(async (req, res) => {
-  const { hash } = req.params;
-  const card = await cardModel
-    .findOne({ hash });
+  const hash = req.params.hash;
+  if (!hash) {
+    return res.status(400).json({
+      error: "Hash parameter is required",
+    });
+  }
+  const card = await cardModel.findOne({ hash: hash });
   if (!card) {
     return res.status(404).json({
       error: "No card found with that hash",
