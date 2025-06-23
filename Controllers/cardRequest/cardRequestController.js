@@ -342,23 +342,85 @@ export const verifyCard = catchAsync(async (req, res) => {
   });
 });
 
-// verfiy a card by hash
 
-export const verifyCardByHash = catchAsync(async (req, res) => {
-  const hash = req.params.hash;
-  if (!hash) {
+
+export const verify = catchAsync(async (req, res) => {
+  const file = req?.files?.["photo"]?.[0] || req.file;
+  const location = req.body.location || req.query.location;
+
+  if (!file || !location) {
     return res.status(400).json({
-      error: "Hash parameter is required",
+      error: "Photo file and location are required",
     });
   }
-  const card = await cardModel.findOne({ hash: hash });
+  const card = await cardModel.findOne({ location });
   if (!card) {
     return res.status(404).json({
-      error: "No card found with that hash",
+      error: "No card found with that location",
     });
   }
+  let cardImage;
+  try {
+    cardImage = await loadImage(card.location);
+  } catch (e) {
+    return res.status(500).json({
+      error: "Failed to load card image",
+    });
+  }
+
+  // Load the uploaded photo
+  let uploadedPhoto;
+  try {
+    uploadedPhoto = await loadImage(file.path);
+  } catch (e) {
+    return res.status(400).json({
+      error: "Invalid uploaded photo",
+    });
+  }
+  const canvas1 = createCanvas(80, 80);
+  const ctx1 = canvas1.getContext("2d");
+  ctx1.drawImage(uploadedPhoto, 0, 0, 80, 80);
+  const data1 = ctx1.getImageData(0, 0, 80, 80).data;
+
+  const canvas2 = createCanvas(80, 80);
+  const ctx2 = canvas2.getContext("2d");
+  try {
+    const cardPhoto = await loadImage(card.photo);
+    ctx2.drawImage(cardPhoto, 0, 0, 80, 80);
+  } catch (e) {
+    return res.status(500).json({
+      error: "Failed to load card's stored photo",
+    });
+  }
+  const data2 = ctx2.getImageData(0, 0, 80, 80).data;
+
+  // Calculate simple pixel similarity
+  let diff = 0;
+  for (let i = 0; i < data1.length; i++) {
+    diff += Math.abs(data1[i] - data2[i]);
+  }
+  const avgDiff = diff / data1.length;
+  const threshold = 30; // Lower is stricter
+
+  // Optionally, scan QR code from card image (using qrcode lib)
+  let qrDecoded = null;
+  try {
+    // Draw QR region from card image (assuming QR is at bottom)
+    const qrCanvas = createCanvas(120, 120);
+    const qrCtx = qrCanvas.getContext("2d");
+    qrCtx.drawImage(cardImage, (cardImage.width / 2) - 60, cardImage.height - 120, 120, 120, 0, 0, 120, 120);
+    const qrBuffer = qrCanvas.toBuffer("image/png");
+    qrDecoded = await QRCode.decode(qrBuffer).catch(() => null);
+  } catch (e) {
+    // Ignore QR decode errors
+  }
+
   return res.status(200).json({
-    message: "Card verified successfully",
-    data: card,
+    message: "Verification result",
+    photoMatch: avgDiff < threshold,
+    qrDecoded,
+    card,
   });
 });
+
+
