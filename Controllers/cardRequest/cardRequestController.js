@@ -324,3 +324,36 @@ export const getAllCards = catchAsync(async (req, res) => {
     data: allCards,
   });
 });
+
+// verfy a card by id
+export const verifyCard = catchAsync(async (req, res) => {
+  const cardId = req.params.id;
+  const card = await cardModel.findById(cardId);
+
+  if (!card) {
+    return res.status(404).json({
+      error: "No card found with that ID",
+    });
+  }
+
+  return res.status(200).json({
+    message: "Card verified successfully",
+    data: card,
+  });
+});
+
+// verfiy a card by hash
+export const verifyCardByHash = catchAsync(async (req, res) => {
+  const { hash } = req.params;
+  const card = await cardModel
+    .findOne({ hash });
+  if (!card) {
+    return res.status(404).json({
+      error: "No card found with that hash",
+    });
+  }
+  return res.status(200).json({
+    message: "Card verified successfully",
+    data: card,
+  });
+});

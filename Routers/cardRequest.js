@@ -1,5 +1,5 @@
 import express from "express";
-import { addCardRequest, getCardRequests, deleteCardRequest, updateCardRequestStatus, generateCardImage, getAllCards } from "../Controllers/cardRequest/cardRequestController";
+import { addCardRequest, getCardRequests, deleteCardRequest, updateCardRequestStatus, getAllCards, verifyCardByHash } from "../Controllers/cardRequest/cardRequestController";
 import { cardRequestImageUpload, galleryImageUpload } from "../Middleware/cloudinary";
 
 const cardRequestRouter = express.Router();
@@ -121,5 +121,6 @@ cardRequestRouter.patch("/card/:id", updateCardRequestStatus);
 // cardRequestRouter.post("/card/:id/image", generateCardImage);
 cardRequestRouter.get("/card", getCardRequests);
 cardRequestRouter.delete("/card/:id", deleteCardRequest);
+cardRequestRouter.get("/verify/:hash", verifyCardByHash); 
 
 export default cardRequestRouter;
