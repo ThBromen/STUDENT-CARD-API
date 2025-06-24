@@ -1,7 +1,7 @@
 import express from "express";
-import { addCardRequest, getCardRequests, deleteCardRequest,verifyCardByHash, updateCardRequestStatus, getAllCards } from "../Controllers/cardRequest/cardRequestController";
+import { addCardRequest, getCardRequests, deleteCardRequest, updateCardRequestStatus, getAllCards } from "../Controllers/cardRequest/cardRequestController";
 import { cardRequestImageUpload, galleryImageUpload } from "../Middleware/cloudinary";
-import { verify } from "../Controllers/cardRequest/verifyCard";
+import { verifyCardByHash } from "../Controllers/cardRequest/verifyCard";
 
 const cardRequestRouter = express.Router();
 
@@ -123,6 +123,6 @@ cardRequestRouter.patch("/card/:id", updateCardRequestStatus);
 cardRequestRouter.get("/card", getCardRequests);
 cardRequestRouter.delete("/card/:id", deleteCardRequest);
 cardRequestRouter.get("/verify/:hash", verifyCardByHash);
-cardRequestRouter.get("/verify", verify); 
+
 
 export default cardRequestRouter;
