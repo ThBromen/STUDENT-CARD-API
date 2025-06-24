@@ -1,5 +1,5 @@
 import express from "express";
-import { addCardRequest, getCardRequests, deleteCardRequest, updateCardRequestStatus, getAllCards } from "../Controllers/cardRequest/cardRequestController";
+import { addCardRequest, getCardRequests, deleteCardRequest,verifyCardByHash, updateCardRequestStatus, getAllCards } from "../Controllers/cardRequest/cardRequestController";
 import { cardRequestImageUpload, galleryImageUpload } from "../Middleware/cloudinary";
 import { verify } from "../Controllers/cardRequest/verifyCard";
 
@@ -122,6 +122,7 @@ cardRequestRouter.patch("/card/:id", updateCardRequestStatus);
 // cardRequestRouter.post("/card/:id/image", generateCardImage);
 cardRequestRouter.get("/card", getCardRequests);
 cardRequestRouter.delete("/card/:id", deleteCardRequest);
+cardRequestRouter.delete("/verify/:hash", verifyCardByHash);
 cardRequestRouter.get("/verify", verify); 
 
 export default cardRequestRouter;
