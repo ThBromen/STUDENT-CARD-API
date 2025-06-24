@@ -2,15 +2,29 @@ import { cardModel } from "../../Models/card";
 import { catchAsync } from "../Error/catchAsync";
 
 export const verifyCardByHash = catchAsync(async (req, res) => {
-let requestHash = req.params.hash;
-  let data = await cardModel.findById(requestHash);
+  const requestHash = req.params.hash;
 
-  if (!data) {
-    return next(new AppError("No User found with that ID", 404));
+  if (!/^0x[a-fA-F0-9]{64}$/.test(requestHash)) {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid hash format",
+    });
   }
 
-  console.log("The User is selected with ID:", data._id);
-  return res.status(200).json(data);
+  const card = await cardModel.findOne({ hash: requestHash });
+
+  if (!card) {
+    return res.status(404).json({
+      status: "error",
+      message: "No card found with that hash",
+    });
+  }
+
+  console.log("✅ Card found with hash:", card.hash);
+
+  return res.status(200).json({
+    status: "success",
+    message: "Card verified successfully using hash",
+    card,
+  });
 });
-
-
