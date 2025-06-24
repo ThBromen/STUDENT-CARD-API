@@ -122,7 +122,7 @@ cardRequestRouter.patch("/card/:id", updateCardRequestStatus);
 // cardRequestRouter.post("/card/:id/image", generateCardImage);
 cardRequestRouter.get("/card", getCardRequests);
 cardRequestRouter.delete("/card/:id", deleteCardRequest);
-cardRequestRouter.delete("/verify/:hash", verifyCardByHash);
+cardRequestRouter.get("/verify/:hash", verifyCardByHash);
 cardRequestRouter.get("/verify", verify); 
 
 export default cardRequestRouter;
