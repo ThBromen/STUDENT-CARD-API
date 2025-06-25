@@ -24,8 +24,7 @@ const cardRequestSchema = mongoose.Schema({
     default: "Pending",
   },
   university: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "University",
+    type: String,
     required: true,
   },
 });
