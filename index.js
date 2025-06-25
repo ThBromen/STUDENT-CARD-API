@@ -6,7 +6,6 @@ import { logger } from "./Middleware";
 import cors from "cors";
 import userRouter from "./Routers/users";
 import cardRequestRouter from "./Routers/cardRequest";
-import universityRouter from "./Routers/univercity";
 
 
 import morgan from "morgan";
@@ -47,8 +46,6 @@ app.use(bodyParser.json());
 app.use("/api/v1/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/cardRequest", cardRequestRouter);
-app.use("/api/v1/university", universityRouter);
-
 
 app.use(globalErrorHandle);
 
@@ -59,7 +56,6 @@ mongoose.connect(process.env.DB_CONNECTION_PROD).then((res) => {
 // mongoose.connect(process.env.DB_CONNECTION_DEV).then((res) => {
 //   console.log(" local Database connected");
 // });
-
 
 app.listen(port, () => {
   console.log(` app listening on port ${port}`);
