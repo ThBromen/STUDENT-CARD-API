@@ -25,7 +25,6 @@ const cardRequestSchema = mongoose.Schema({
   },
   university: {
     type: String,
-    required: true,
   },
 });
 
