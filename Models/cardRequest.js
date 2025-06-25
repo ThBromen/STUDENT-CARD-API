@@ -1,5 +1,3 @@
-
-
 import mongoose from "mongoose";
 
 const cardRequestSchema = mongoose.Schema({
@@ -24,6 +22,11 @@ const cardRequestSchema = mongoose.Schema({
     type: String,
     enum: ["Pending", "Approved", "Rejected"],
     default: "Pending",
+  },
+  university: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "University",
+    required: true,
   },
 });
 

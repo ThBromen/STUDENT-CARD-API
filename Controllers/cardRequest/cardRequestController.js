@@ -9,7 +9,6 @@ import { cardModel } from "../../Models/card";
 
 dotenv.config();
 
-// ✅ Configure Cloudinary
 cloudinary.v2;
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -17,28 +16,21 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
-// ✅ Add cardRequest (with image upload)
 export const addCardRequest = catchAsync(async (req, res) => {
   console.log("Received request to add cardRequest");
-  console.log("Request body:", !req.file);
-  // Check if 'photo' file is present
-  if (!req.files&& !req.file && !req.file["photo"] && req.files["photo"].length === 0) {
+  if (!req.files && !req.file && !req.file["photo"] && req.files["photo"].length === 0) {
     return res.status(400).json({
       error: "No student photo provided",
     });
   }
-  const file = req?.files?.["photo"]?.[0]||req.file;
+  const file = req?.files?.["photo"]?.[0] || req.file;
 
-  // Upload to Cloudinary
-  const result = await cloudinary.uploader.upload(
-    file.path
-  );
+  const result = await cloudinary.uploader.upload(file.path);
   const userBody = req.body;
-  if(userBody?.status) {
+  if (userBody?.status) {
     userBody.status = "Pending";
   }
 
-  // Create new cardRequest entry
   const newcardRequest = await cardRequest.create({
     ...req.body,
     photo: result.secure_url,
@@ -51,38 +43,31 @@ export const addCardRequest = catchAsync(async (req, res) => {
     data: { newcardRequest },
   });
 });
-// ✅ Update cardRequest by ID status
+
 export const updateCardRequestStatus = catchAsync(async (req, res) => {
   const requestId = req.params.id;
   const { status } = req.body;
 
-  // Validate status
   if (!["Pending", "Approved", "Rejected"].includes(status)) {
     return res.status(400).json({
       error: "Invalid status. Must be 'Pending', 'Approved', or 'Rejected'.",
     });
   }
 
-  const updatedRequest = await cardRequest.findByIdAndUpdate(
-    requestId,
-    { status },
-    { new: true }
-  );
-
+  const updatedRequest = await cardRequest.findByIdAndUpdate(requestId, { status }, { new: true });
 
   if (!updatedRequest) {
     return res.status(404).json({
       error: "No card request found with that ID",
     });
   }
-  if(status === "Approved") {
-    const result=await generateCardImage(requestId);
+  if (status === "Approved") {
+    const result = await generateCardImage(requestId);
     return res.status(200).json({
       message: "cardRequest status updated and card generated successfully",
       data: { updatedRequest, card: result },
     });
   }
-  
 
   console.log("cardRequest updated with ID:", updatedRequest._id);
 
@@ -91,8 +76,6 @@ export const updateCardRequestStatus = catchAsync(async (req, res) => {
     data: updatedRequest,
   });
 });
-
-// ✅ Delete cardRequest by ID
 
 export const deleteCardRequest = catchAsync(async (req, res) => {
   const requestId = req.params.id;
@@ -112,24 +95,17 @@ export const deleteCardRequest = catchAsync(async (req, res) => {
   });
 });
 
-// ✅ Generate card image using HTML canvas and return as PNG (fetch data by ID, draw QR code from qrLocation)
-
 export const generateCardImage = async (requestId) => {
-;
-  const student = await cardRequest.findById(requestId);
-  //check if card was already generated
+  const student = await cardRequest.findById(requestId).populate("university");
   const card = await cardModel.findOne({ requestId });
-  if (card) {
-    return card;
-  }
-  if (!student) {
-    return null
-  }
+  if (card) return card;
+  if (!student) return null;
 
   const { name, regNumber, department, yearOfStudy, photo } = student;
+  const univercityName = student.university?.univercityName || "Unknown University";
 
-  // Generate qrLocation (simulate or use your actual function)
-  const {qrFileLocation, hash} = await saveToBlockChainAndGetQRFileLocation(
+  let { qrFileLocation, hash } = await saveToBlockChainAndGetQRFileLocation(
+    univercityName,
     regNumber,
     yearOfStudy,
     name,
@@ -138,20 +114,19 @@ export const generateCardImage = async (requestId) => {
     student.program
   );
 
-  // Card dimensions
+  hash = hash?.replace(/^0x/, "").toUpperCase();
+
   const width = 240;
   const height = 360;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
-  // Background gradient
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, "#2563eb");
   gradient.addColorStop(1, "#4338ca");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
-  // Rounded corners
   ctx.globalCompositeOperation = "destination-in";
   ctx.beginPath();
   ctx.moveTo(20, 0);
@@ -167,17 +142,14 @@ export const generateCardImage = async (requestId) => {
   ctx.fill();
   ctx.globalCompositeOperation = "source-over";
 
-  // University name
   ctx.font = "bold 16px Arial";
   ctx.fillStyle = "#fff";
   ctx.textAlign = "center";
-  ctx.fillText("University of Excellence", width / 2, 32);
+  ctx.fillText(univercityName, width / 2, 32);
 
-  // Subtitle
   ctx.font = "12px Arial";
   ctx.fillText("Student ID Card", width / 2, 52);
 
-  // Student photo
   try {
     if (photo) {
       const img = await loadImage(photo);
@@ -188,18 +160,15 @@ export const generateCardImage = async (requestId) => {
       ctx.clip();
       ctx.drawImage(img, width / 2 - 40, 60, 80, 80);
       ctx.restore();
-      // Border
+
       ctx.beginPath();
       ctx.arc(width / 2, 100, 40, 0, Math.PI * 2, true);
       ctx.lineWidth = 4;
       ctx.strokeStyle = "#fff";
       ctx.stroke();
     }
-  } catch (e) {
-    // Ignore photo errors
-  }
+  } catch (e) {}
 
-  // Student info
   ctx.font = "bold 16px Arial";
   ctx.fillStyle = "#fff";
   ctx.fillText(name, width / 2, 160);
@@ -209,13 +178,11 @@ export const generateCardImage = async (requestId) => {
   ctx.fillText(department, width / 2, 200);
   ctx.fillText(`Year ${yearOfStudy}`, width / 2, 220);
 
-  // Draw QR code from qrLocation
   if (qrFileLocation) {
     try {
       const qrImg = await loadImage(qrFileLocation);
       ctx.drawImage(qrImg, width / 2 - 60, 240, 120, 120);
     } catch (e) {
-      // Fallback: placeholder if loading fails
       ctx.fillStyle = "#fff";
       ctx.fillRect(width / 2 - 60, 240, 120, 120);
       ctx.fillStyle = "#000";
@@ -223,7 +190,6 @@ export const generateCardImage = async (requestId) => {
       ctx.fillText("QR CODE", width / 2, 300);
     }
   } else {
-    // Fallback: placeholder
     ctx.fillStyle = "#fff";
     ctx.fillRect(width / 2 - 60, 240, 120, 120);
     ctx.fillStyle = "#000";
@@ -231,12 +197,7 @@ export const generateCardImage = async (requestId) => {
     ctx.fillText("QR CODE", width / 2, 300);
   }
 
-  // Send image as PNG
-
-// Save the card to the cardModel and return the card
   const buffer = canvas.toBuffer("image/png");
-  console.log(buffer);
-  // Upload the buffer to Cloudinary
   const uploadResult = await new Promise((resolve, reject) => {
     const stream = cloudinary.v2.uploader.upload_stream(
       { resource_type: "image", folder: "cards" },
@@ -247,37 +208,30 @@ export const generateCardImage = async (requestId) => {
     );
     stream.end(buffer);
   });
+
   const cardData = {
-  name,
-  regNumber,
-  department,
-  yearOfStudy,
-  photo,
-  location: uploadResult.secure_url,
-  hash,
-  school: student.school,
-  program: student.program,
-  requestId,
+    name,
+    regNumber,
+    department,
+    yearOfStudy,
+    photo,
+    location: uploadResult.secure_url,
+    hash,
+    school: student.school,
+    program: student.program,
+    requestId,
   };
+
   const newCard = await cardModel.create(cardData);
-
-// Optionally, you can return the card as JSON as well as the image
- 
   return newCard;
-
 };
 
-
-// ✅ Get cardRequests (with optional pagination)
 export const getCardRequests = catchAsync(async (req, res) => {
   const allRequests = await cardRequest.find();
-
   const page = parseInt(req.query.page);
   const limit = parseInt(req.query.limit);
-
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
-
   const results = {};
 
   if (page && limit) {
@@ -309,14 +263,10 @@ export const getCardRequests = catchAsync(async (req, res) => {
   }
 });
 
-// Gett all cards generated from card requests
 export const getAllCards = catchAsync(async (req, res) => {
   const allCards = await cardModel.find();
-
   if (!allCards || allCards.length === 0) {
-    return res.status(404).json({
-      error: "No cards found",
-    });
+    return res.status(404).json({ error: "No cards found" });
   }
 
   return res.status(200).json({
@@ -325,4 +275,19 @@ export const getAllCards = catchAsync(async (req, res) => {
   });
 });
 
+export const getCardRequestsByUniversity = async (req, res) => {
+  try {
+    const universityId = req.params.universityId;
+    const requests = await cardRequest
+      .find({ university: universityId })
+      .populate("university");
 
+    res.status(200).json({
+      status: "success",
+      results: requests.length,
+      data: requests,
+    });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+};
